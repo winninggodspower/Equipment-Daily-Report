@@ -1,18 +1,25 @@
 "use client"
 
 import { useState, useEffect, useTransition } from "react"
-import { getReports, downloadDailyReport } from "./actions"
-import { List, Grid, Download, Loader2, CalendarDays, CheckCircle, AlertCircle } from "lucide-react"
+import { getReports, downloadDailyReport, deleteReport } from "./actions"
+import { List, Grid, Download, Loader2, CalendarDays, CheckCircle, AlertCircle, LogOut, Copy } from "lucide-react"
 import ReportTable from "@/components/report-table"
 import ReportCards from "@/components/report-cards"
+import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
+import { format } from "date-fns"
 
 export default function AdminDashboard() {
   const [isFetching, startFetching] = useTransition()
   const [isDownloading, startDownloading] = useTransition()
+  const [isLoggingOut, startLogoutTransition] = useTransition()
+  const [isCopyingAll, startCopyingAll] = useTransition()
   const [reports, setReports] = useState([])
   const [viewMode, setViewMode] = useState("table") // 'table' or 'card'
   const [filterDate, setFilterDate] = useState("") // YYYY-MM-DD format
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string } or null
+
+  const router = useRouter()
 
   
   useEffect(() => {
@@ -46,12 +53,72 @@ export default function AdminDashboard() {
     })
   }
 
+  
+  const handleDeleteReport = async (reportId) => {
+    const result = await deleteReport(reportId) // Call the deleteReport action
+    if (result.success) {
+      setMessage({ type: "success", text: result.message })
+      setReports(reports.filter(report => report.id !== reportId)) // Remove the deleted report from the state
+    } else {
+      setMessage({ type: "error", text: result.message || "Failed to delete report." })
+    }
+    setTimeout(() => setMessage(null), 5000)
+  }
+
+    // Function to format a single report for copying (used by handleCopyAllReports)
+  const formatReportForCopy = (report) => {
+    const formattedDate = report.date ? format(new Date(report.date), "MMM dd, yyyy") : "N/A";
+    return `DG 35
+    Report ID: ${report.id} • ${formattedDate}
+    Location:${report.location}
+    Hours:${report.startingRunningHours} - ${report.endingRunningHours}
+    Fuel:${report.startingFuelLevel}% - ${report.endingFuelLevel}%${report.observations ? `
+    Observations: ${report.observations}` : ''}`;
+  };
+
+  const handleCopyAllReports = () => {
+    if (reports.length === 0) {
+      setMessage({ type: "error", text: "No reports to copy." });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    startCopyingAll(async () => {
+      const allReportsText = reports.map(formatReportForCopy).join("\n\n---\n\n"); // Join with a separator
+      try {
+        await navigator.clipboard.writeText(allReportsText);
+        setMessage({ type: "success", text: `Details of ${reports.length} reports copied to clipboard!` });
+      } catch (err) {
+        setMessage({ type: "error", text: "Failed to copy all report details." });
+        console.error("Failed to copy all reports: ", err);
+      }
+      setTimeout(() => setMessage(null), 3000);
+    });
+  };
+
+  const handleLogout = async () => {
+    startLogoutTransition(async () => {
+      await signOut()
+      router.replace("/login") // Ensure client-side redirect after logout
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-slate-800 mb-3">Report Dashboard</h1>
-          <p className="text-lg text-slate-600">View and manage all submitted equipment reports.</p>
+        <div className="flex justify-between items-center mb-10">
+          <div className="text-left">
+            <h1 className="text-4xl font-extrabold text-slate-800 mb-3">Report Dashboard</h1>
+            <p className="text-lg text-slate-600">View and manage all submitted equipment reports.</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white shadow-sm"
+          >
+            {isLoggingOut ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <LogOut className="w-4 h-4 mr-2" />}
+            Logout
+          </button>
         </div>
 
         {/* Message Display */}
@@ -112,15 +179,25 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {/* Download Button */}
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading || !filterDate}
-            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white shadow-sm"
-          >
-            {isDownloading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-            Download Daily Report
-          </button>
+          {/* Download and Copy All Buttons */}
+          <div className="flex gap-2 w-full md:w-auto justify-center">
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading || !filterDate}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white shadow-sm"
+            >
+              {isDownloading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+              Download Daily Report
+            </button>
+            <button
+              onClick={handleCopyAllReports}
+              disabled={isCopyingAll || reports.length === 0}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 w-full md:w-auto bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white shadow-sm"
+            >
+              {isCopyingAll ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+              Copy All Reports
+            </button>
+          </div>
         </div>
 
         {/* Reports Display */}
@@ -130,9 +207,9 @@ export default function AdminDashboard() {
             <span className="ml-3 text-lg text-slate-600">Loading reports...</span>
           </div>
         ) : viewMode === "table" ? (
-          <ReportTable reports={reports} />
+          <ReportTable reports={reports} onDeleteReport={handleDeleteReport} />
         ) : (
-          <ReportCards reports={reports} />
+          <ReportCards reports={reports} onDeleteReport={handleDeleteReport} />
         )}
       </div>
     </div>

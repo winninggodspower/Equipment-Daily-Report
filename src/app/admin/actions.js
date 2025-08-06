@@ -43,7 +43,6 @@ export async function downloadDailyReport(date) {
     return { success: false, message: "No reports found for this date." };
   }
 
-
   // Define CSV headers
   const headers = [
     "Report ID",
@@ -84,5 +83,22 @@ export async function downloadDailyReport(date) {
     success: true,
     data: csvContent,
     filename: `daily_report_${date}.csv`,
+  }
+}
+
+
+export async function deleteReport(reportId) {
+  await dbConnect();
+  try {
+    // Mongoose delete by _id
+    const result = await DailyReport.deleteOne({ _id: reportId });
+    if (result.deletedCount === 1) {
+      return { success: true, message: `Report ${reportId} deleted successfully.` };
+    } else {
+      return { success: false, message: `Report ${reportId} not found.` };
+    }
+  } catch (error) {
+    console.error("Error deleting report:", error);
+    return { success: false, message: "Failed to delete report due to a server error." };
   }
 }

@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 let ADMIN_EMAIL = process.env.ADMIN_EMAIL 
 let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 
-const handler = NextAuth({
+export const authOptions = {
     providers: [
         CredentialsProvider({
             name: "Credentials",
@@ -31,6 +31,8 @@ const handler = NextAuth({
             }
         })
     ],
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

@@ -2,19 +2,24 @@
 
 import { useState, useEffect, useTransition } from "react"
 import { getReports, downloadDailyReport } from "./actions"
+import { List, Grid, Download, Loader2, CalendarDays, CheckCircle, AlertCircle } from "lucide-react"
 import ReportTable from "@/components/report-table"
 import ReportCards from "@/components/report-cards"
-import { List, Grid, Download, Loader2, CalendarDays, CheckCircle, AlertCircle } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { toast } from "react-toastify"
+import { redirect } from "next/navigation"
 
 export default function AdminPage() {
+  const { data: session } = useSession()
+  const [isFetching, startFetching] = useTransition()
+  const [isDownloading, startDownloading] = useTransition()
   const [reports, setReports] = useState([])
   const [viewMode, setViewMode] = useState("table") // 'table' or 'card'
   const [filterDate, setFilterDate] = useState("") // YYYY-MM-DD format
-  const [isFetching, startFetching] = useTransition()
-  const [isDownloading, startDownloading] = useTransition()
-  const [message, setMessage] = useState(null) // For success/error messages
-  const [messageType, setMessageType] = useState(null) // 'success' or 'error'
+  const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string } or null
 
+
+  
   useEffect(() => {
     startFetching(async () => {
       const fetchedReports = await getReports(filterDate || null)
@@ -24,9 +29,8 @@ export default function AdminPage() {
 
   const handleDownload = async () => {
     if (!filterDate) {
-      setMessage("Please select a date to download the report.")
-      setMessageType("error")
-      return
+      setMessage({ type: "error", text: "Please select a date to download the report." });
+      return;
     }
 
     startDownloading(async () => {
@@ -39,16 +43,22 @@ export default function AdminPage() {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        setMessage(`Daily report for ${filterDate} downloaded successfully.`)
-        setMessageType("success")
+        setMessage({ type: "success", text: `Daily report for ${filterDate} downloaded successfully.` });
       } else {
-        setMessage(result.message || "Could not download report.")
-        setMessageType("error")
+        setMessage({ type: "error", text: result.message || "Could not download report." });
       }
-      setTimeout(() => setMessage(null), 5000) // Clear message after 5 seconds
+      setTimeout(() => setMessage(null), 5000)
     })
   }
 
+  if (session) {
+    return (
+      <>
+        Signed in as {session.user.email} <br />
+        <button onClick={() => signOut()}>Sign out</button>
+      </>
+    )
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
@@ -61,17 +71,17 @@ export default function AdminPage() {
         {message && (
           <div
             className={`mb-8 p-4 rounded-r-lg flex items-center ${
-              messageType === "success"
+              message.type === "success"
                 ? "bg-emerald-50 border-l-4 border-emerald-400 text-emerald-700"
                 : "bg-red-50 border-l-4 border-red-400 text-red-700"
             }`}
           >
-            {messageType === "success" ? (
+            {message.type === "success" ? (
               <CheckCircle className="h-5 w-5 mr-3 text-emerald-400" />
             ) : (
               <AlertCircle className="h-5 w-5 mr-3 text-red-400" />
             )}
-            <p className="text-sm font-medium">{message}</p>
+            <p className="text-sm font-medium">{message.text}</p>
           </div>
         )}
 

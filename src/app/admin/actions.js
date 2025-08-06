@@ -1,88 +1,36 @@
 "use server"
+import { normalizeToUTC } from '../utils';
 import dbConnect from '@/lib/mongoose';
 import DailyReport from '@/models/dailyreport';
 
-// Simulated database of reports
-const simulatedReports = [
-  {
-    id: "rep_001",
-    name: "John Doe",
-    date: "2025-07-30",
-    equipmentTag: "EXC-001",
-    location: "Site A",
-    startingRunningHours: 100.5,
-    endingRunningHours: 108.2,
-    startingFuelLevel: 75.0,
-    endingFuelLevel: 60.5,
-    quantityFuelAdded: 0,
-    observations: "Routine operation, no issues.",
-    timestamp: new Date("2025-07-30T10:00:00Z").toISOString(),
-  },
-  {
-    id: "rep_002",
-    name: "Jane Smith",
-    date: "2025-07-30",
-    equipmentTag: "TRK-005",
-    location: "Site B",
-    startingRunningHours: 500.0,
-    endingRunningHours: 512.8,
-    startingFuelLevel: 40.0,
-    endingFuelLevel: 25.0,
-    quantityFuelAdded: 50,
-    observations: "Fuel added. Engine running smoothly.",
-    timestamp: new Date("2025-07-30T11:30:00Z").toISOString(),
-  },
-  {
-    id: "rep_003",
-    name: "Alice Johnson",
-    date: "2025-07-31",
-    equipmentTag: "GEN-003",
-    location: "Site C",
-    startingRunningHours: 200.0,
-    endingRunningHours: 205.0,
-    startingFuelLevel: 90.0,
-    endingFuelLevel: 85.0,
-    quantityFuelAdded: 0,
-    observations: "Generator operating within parameters.",
-    timestamp: new Date("2025-07-31T09:15:00Z").toISOString(),
-  },
-  {
-    id: "rep_004",
-    name: "John Doe",
-    date: "2025-07-31",
-    equipmentTag: "EXC-001",
-    location: "Site A",
-    startingRunningHours: 108.2,
-    endingRunningHours: 115.0,
-    startingFuelLevel: 60.5,
-    endingFuelLevel: 45.0,
-    quantityFuelAdded: 30,
-    observations: "Minor hydraulic leak observed, will monitor.",
-    timestamp: new Date("2025-07-31T14:00:00Z").toISOString(),
-  },
-  {
-    id: "rep_005",
-    name: "Bob Williams",
-    date: "2025-08-01",
-    equipmentTag: "TRK-005",
-    location: "Site B",
-    startingRunningHours: 512.8,
-    endingRunningHours: 520.1,
-    startingFuelLevel: 25.0,
-    endingFuelLevel: 15.0,
-    quantityFuelAdded: 0,
-    observations: "Tire pressure checked. All good.",
-    timestamp: new Date("2025-08-01T08:45:00Z").toISOString(),
-  },
-]
 
 // Fetch all reports, or filter by date if provided
 export async function getReports(filterDate = null) {
   await dbConnect();
-  let query = filterDate ? {date: filterDate} : {};
+
+  let query = filterDate ? { date: normalizeToUTC(filterDate)} : {};
   const reports = await DailyReport.find(query).sort({ date: 1 }).lean();
 
-  return reports;
+  console.log("Fetched reports:", reports.length, "reports found.");
+
+  // Convert to plain JSON-serializable objects
+  const serializedReports = reports.map((report) => ({
+    id: report._id.toString().substring(0, 7), // Shorten ID for display
+    name: report.name,
+    equipmentTag: report.equipmentTag,
+    location: report.location,
+    startingRunningHours: report.startingRunningHours,
+    endingRunningHours: report.endingRunningHours,
+    startingFuelLevel: report.startingFuelLevel,
+    endingFuelLevel: report.endingFuelLevel,
+    quantityFuelAdded: report.quantityFuelAdded,
+    observations: report.observations,
+    date: report.date?.toISOString() ?? null,
+    createdAt: report.createdAt?.toISOString() ?? null,
+    updatedAt: report.updatedAt?.toISOString() ?? null,
+  }));
+
+  return serializedReports;
 }
 
 export async function downloadDailyReport(date) {
@@ -115,7 +63,7 @@ export async function downloadDailyReport(date) {
   // Format data for CSV
   const csvRows = reportsForDate.map((report) =>
     [
-      report.id,
+      report._id.toString().substring(0, 7), // Shorten ID for display
       report.name,
       report.date,
       report.equipmentTag,

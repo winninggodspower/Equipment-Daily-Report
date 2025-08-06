@@ -3,6 +3,7 @@ import { object, string, number, date } from 'yup';
 import mongoose from 'mongoose';
 import dbConnect from './lib/mongoose';
 import DailyReport from './models/dailyreport';
+import { normalizeToUTC } from './utils';
 
 
 let equipmentSchema = object({
@@ -39,7 +40,7 @@ export async function submitEquipmentForm(previousState, formData) {
   // Extract form data
   const data = {
     name: formData.get("name"),
-    date: formData.get("date"),
+    date: normalizeToUTC(formData.get("date")),
     equipmentTag: formData.get("equipmentTag"),
     location: formData.get("location"),
     startingRunningHours: Number.parseFloat(formData.get("startingRunningHours")),

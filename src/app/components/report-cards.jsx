@@ -1,10 +1,10 @@
 "use client"
 
-import { Tag, MapPin, Clock, Fuel, FileText, Trash2, Loader2 } from 'lucide-react' // Removed Copy and MoreHorizontal
+import { Tag, MapPin, Clock, Fuel, FileText, Trash2, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { useState, useTransition } from "react"
 
-export default function ReportCards({ reports, onDeleteReport }) { // Removed onCopyReport prop
+export default function ReportCards({ reports, onDeleteReport }) {
   const [deletingId, setDeletingId] = useState(null)
   const [isDeleting, startDeleteTransition] = useTransition()
 
@@ -16,6 +16,24 @@ export default function ReportCards({ reports, onDeleteReport }) { // Removed on
         setDeletingId(null)
       })
     }
+  }
+
+  // Fallback functions for when virtual fields aren't available
+  const formatTime = (hours, minutes) => {
+    if (hours === undefined || minutes === undefined) return "N/A"
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+  }
+
+  const calculateDuration = (startHour, startMinute, endHour, endMinute) => {
+    if (startHour === undefined || startMinute === undefined || endHour === undefined || endMinute === undefined) {
+      return "N/A"
+    }
+    const startTimeMinutes = startHour * 60 + startMinute
+    const endTimeMinutes = endHour * 60 + endMinute
+    const durationMinutes = endTimeMinutes - startTimeMinutes
+    const hours = Math.floor(durationMinutes / 60)
+    const minutes = durationMinutes % 60
+    return `${hours}h ${minutes}m`
   }
 
   if (!reports || reports.length === 0) {
@@ -35,7 +53,7 @@ export default function ReportCards({ reports, onDeleteReport }) { // Removed on
               {report.equipmentTag}
             </h3>
             <p className="text-sm text-muted-foreground text-slate-500">
-              Report ID: {report.id} &bull; {report.date ? format(new Date(report.date), "MMM dd, yyyy") : 'N/A'}
+              Report ID: {report.id} &bull; {report.date ? format(new Date(report.date), "MMM dd, yyyy") : "N/A"}
             </p>
           </div>
           <div className="p-6 pt-0 space-y-3 text-sm">
@@ -45,7 +63,18 @@ export default function ReportCards({ reports, onDeleteReport }) { // Removed on
             </div>
             <div className="flex items-center text-slate-700">
               <Clock className="w-4 h-4 mr-2 text-blue-500" />
-              <span className="font-medium">Hours:</span> {report.startingRunningHours} - {report.endingRunningHours}
+              <span className="font-medium">Time:</span>{" "}
+              {/* Use virtual fields if available, fallback to manual formatting */}
+              {report.startTimeFormatted && report.endTimeFormatted
+                ? `${report.startTimeFormatted} - ${report.endTimeFormatted}`
+                : `${formatTime(report.startHour, report.startMinute)} - ${formatTime(report.endHour, report.endMinute)}`}
+            </div>
+            <div className="flex items-center text-slate-700">
+              <Clock className="w-4 h-4 mr-2 text-green-500" />
+              <span className="font-medium">Duration:</span>{" "}
+              {/* Use virtual field if available, fallback to manual calculation */}
+              {report.workDurationFormatted ||
+                calculateDuration(report.startHour, report.startMinute, report.endHour, report.endMinute)}
             </div>
             <div className="flex items-center text-slate-700">
               <Fuel className="w-4 h-4 mr-2 text-amber-500" />

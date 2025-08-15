@@ -7,7 +7,7 @@ import ReportTable from "@/components/report-table"
 import ReportCards from "@/components/report-cards"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { format } from "date-fns"
+import { formatReportForCopy } from "@/utils"
 
 export default function AdminDashboard() {
   const [isFetching, startFetching] = useTransition()
@@ -20,7 +20,6 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: string } or null
 
   const router = useRouter()
-
   
   useEffect(() => {
     startFetching(async () => {
@@ -65,16 +64,6 @@ export default function AdminDashboard() {
     setTimeout(() => setMessage(null), 5000)
   }
 
-    // Function to format a single report for copying (used by handleCopyAllReports)
-  const formatReportForCopy = (report) => {
-    const formattedDate = report.date ? format(new Date(report.date), "MMM dd, yyyy") : "N/A";
-    return `DG 35
-    Report ID: ${report.id} • ${formattedDate}
-    Location:${report.location}
-    Hours:${report.startingRunningHours} - ${report.endingRunningHours}
-    Fuel:${report.startingFuelLevel}% - ${report.endingFuelLevel}%${report.observations ? `
-    Observations: ${report.observations}` : ''}`;
-  };
 
   const handleCopyAllReports = () => {
     if (reports.length === 0) {
@@ -182,6 +171,7 @@ export default function AdminDashboard() {
           {/* Download and Copy All Buttons */}
           <div className="flex gap-2 w-full md:w-auto justify-center">
             <button
+            
               onClick={handleDownload}
               disabled={isDownloading || !filterDate}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white shadow-sm"

@@ -1,17 +1,17 @@
 "use server"
-import { normalizeToUTC } from '../utils';
-import dbConnect from '@/lib/mongoose';
-import DailyReport from '@/models/dailyreport';
-
+import { normalizeToUTC } from "../utils"
+import dbConnect from "@/lib/mongoose"
+import DailyReport from "@/models/dailyreport"
 
 // Fetch all reports, or filter by date if provided
 export async function getReports(filterDate = null) {
-  await dbConnect();
+  await dbConnect()
 
-  let query = filterDate ? { date: normalizeToUTC(filterDate)} : {};
-  const reports = await DailyReport.find(query).sort({ date: 1 }).lean();
+  const query = filterDate ? { date: normalizeToUTC(filterDate) } : {}
+  // Don't use .lean() so we get the virtual fields
+  const reports = await DailyReport.find(query).sort({ date: 1 })
 
-  console.log("Fetched reports:", reports.length, "reports found.");
+  console.log("Fetched reports:", reports.length, "reports found.")
 
   // Convert to plain JSON-serializable objects
   const serializedReports = reports.map((report) => ({
@@ -19,8 +19,15 @@ export async function getReports(filterDate = null) {
     name: report.name,
     equipmentTag: report.equipmentTag,
     location: report.location,
-    startingRunningHours: report.startingRunningHours,
-    endingRunningHours: report.endingRunningHours,
+    startHour: report.startHour,
+    startMinute: report.startMinute,
+    endHour: report.endHour,
+    endMinute: report.endMinute,
+    // Use virtual fields for formatted times and duration
+    startTimeFormatted: report.startTimeFormatted,
+    endTimeFormatted: report.endTimeFormatted,
+    workDurationFormatted: report.workDurationFormatted,
+    workDurationMinutes: report.workDurationMinutes,
     startingFuelLevel: report.startingFuelLevel,
     endingFuelLevel: report.endingFuelLevel,
     quantityFuelAdded: report.quantityFuelAdded,
@@ -28,19 +35,19 @@ export async function getReports(filterDate = null) {
     date: report.date?.toISOString() ?? null,
     createdAt: report.createdAt?.toISOString() ?? null,
     updatedAt: report.updatedAt?.toISOString() ?? null,
-  }));
+  }))
 
-  return serializedReports;
+  return serializedReports
 }
 
 export async function downloadDailyReport(date) {
-  await dbConnect();
-  let query = filterDate ? {date: filterDate} : {};
+  await dbConnect()
 
-  const reports = await DailyReport.find(query).sort({ date: 1 }).lean();
+  // Don't use .lean() so we get the virtual fields
+  const reports = await DailyReport.find({ date: normalizeToUTC(date) }).sort({ date: 1 })
 
   if (!reports.length) {
-    return { success: false, message: "No reports found for this date." };
+    return { success: false, message: "No reports found for this date." }
   }
 
   // Define CSV headers
@@ -50,8 +57,9 @@ export async function downloadDailyReport(date) {
     "Report Date",
     "Equipment Tag",
     "Location",
-    "Starting Running Hours",
-    "Ending Running Hours",
+    "Start Time",
+    "End Time",
+    "Work Duration",
     "Starting Fuel Level(%)",
     "Ending Fuel Level(%)",
     "Quantity of Fuel Added Today(Ltrs)",
@@ -59,21 +67,24 @@ export async function downloadDailyReport(date) {
     "Timestamp",
   ]
 
-  // Format data for CSV
-  const csvRows = reportsForDate.map((report) =>
+  // Format data for CSV using virtual fields
+  const csvRows = reports.map((report) =>
     [
-      report._id.toString().substring(0, 7), // Shorten ID for display
+      report._id
+        .toString()
+        .substring(0, 7), // Shorten ID for display
       report.name,
-      report.date,
+      report.date ? new Date(report.date).toISOString().split("T")[0] : "", // Format date for CSV
       report.equipmentTag,
       report.location,
-      report.startingRunningHours,
-      report.endingRunningHours,
+      report.startTimeFormatted, // Use virtual field
+      report.endTimeFormatted, // Use virtual field
+      report.workDurationFormatted, // Use virtual field
       report.startingFuelLevel,
       report.endingFuelLevel,
       report.quantityFuelAdded,
-      `"${report.observations.replace(/"/g, '""')}"`, // Escape double quotes
-      report.timestamp,
+      `"${report.observations ? report.observations.replace(/"/g, '""') : ""}"`, // Escape double quotes, handle undefined
+      report.createdAt ? new Date(report.createdAt).toISOString() : "", // Use createdAt for timestamp
     ].join(","),
   )
 
@@ -86,19 +97,18 @@ export async function downloadDailyReport(date) {
   }
 }
 
-
 export async function deleteReport(reportId) {
-  await dbConnect();
+  await dbConnect()
   try {
     // Mongoose delete by _id
-    const result = await DailyReport.deleteOne({ _id: reportId });
+    const result = await DailyReport.deleteOne({ _id: reportId })
     if (result.deletedCount === 1) {
-      return { success: true, message: `Report ${reportId} deleted successfully.` };
+      return { success: true, message: `Report ${reportId} deleted successfully.` }
     } else {
-      return { success: false, message: `Report ${reportId} not found.` };
+      return { success: false, message: `Report ${reportId} not found.` }
     }
   } catch (error) {
-    console.error("Error deleting report:", error);
-    return { success: false, message: "Failed to delete report due to a server error." };
+    console.error("Error deleting report:", error)
+    return { success: false, message: "Failed to delete report due to a server error." }
   }
 }

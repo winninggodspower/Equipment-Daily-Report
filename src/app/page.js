@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { startTransition, useEffect, useState } from "react"
 import { useActionState } from "react"
 import { submitEquipmentForm } from "./actions"
 import { User, Clock, Fuel, FileText, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import FormInput from "@/components/form-input"
 import FormTextarea from "@/components/form-textarea"
+import ConfirmationModal from "@/components/confirmation-modal"
 
 export default function EquipmentForm() {
   const [form, setForm] = useState({
@@ -13,14 +14,17 @@ export default function EquipmentForm() {
     date: new Date().toISOString().split("T")[0], // Default to today
     equipmentTag: "",
     location: "",
-    startingRunningHours: "",
-    endingRunningHours: "",
+    startHour: "",
+    startMinute: "",
+    endHour: "",
+    endMinute: "",
     startingFuelLevel: "",
     endingFuelLevel: "",
     quantityFuelAdded: "",
     observations: "",
   })
 
+  const [showModal, setShowModal] = useState(false)
   const [state, action, isPending] = useActionState(submitEquipmentForm, null)
 
   // Repopulate form fields on error
@@ -29,21 +33,46 @@ export default function EquipmentForm() {
     if (state?.success) {
       setForm({
         name: "",
-        date: "",
+        date: new Date().toISOString().split("T")[0],
         equipmentTag: "",
         location: "",
-        startingRunningHours: "",
-        endingRunningHours: "",
+        startHour: "",
+        startMinute: "",
+        endHour: "",
+        endMinute: "",
         startingFuelLevel: "",
         endingFuelLevel: "",
         quantityFuelAdded: "",
         observations: "",
       })
+      setShowModal(false)
     }
   }, [state])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault()
+    setShowModal(true)
+  }
+
+  const handleModalSubmit = () => {
+    const formData = new FormData()
+    Object.keys(form).forEach((key) => {
+      formData.append(key, form[key])
+    })
+
+    startTransition(async () => {
+     try {
+        action(formData)
+     } catch (error) {
+      
+     } finally {
+      setShowModal(false)
+     }
+    })
   }
 
   return (
@@ -55,7 +84,10 @@ export default function EquipmentForm() {
           <p className="text-slate-600">Track equipment performance and fuel consumption</p>
         </div>
 
-        <form action={action} className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+        <form
+          onSubmit={handleFormSubmit}
+          className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
+        >
           {/* Form Header */}
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-6">
             <h2 className="text-xl font-semibold text-white">Daily Equipment Log</h2>
@@ -148,33 +180,71 @@ export default function EquipmentForm() {
                 <div className="bg-blue-50 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center">
                     <Clock className="w-5 h-5 mr-2 text-blue-600" />
-                    Operating Hours
+                    Operating Time
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormInput
-                      label="Starting Hours"
-                      name="startingRunningHours"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="0.0"
-                      required
-                      value={form.startingRunningHours}
-                      onChange={handleChange}
-                    />
+                  <div className="space-y-4">
+                    {/* Start Time */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Start Time <span className="text-red-500">*</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormInput
+                          label="Hour (0-23)"
+                          name="startHour"
+                          type="number"
+                          min="0"
+                          max="23"
+                          placeholder="00"
+                          required
+                          value={form.startHour}
+                          onChange={handleChange}
+                        />
+                        <FormInput
+                          label="Minute (0-59)"
+                          name="startMinute"
+                          type="number"
+                          min="0"
+                          max="59"
+                          placeholder="00"
+                          required
+                          value={form.startMinute}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
 
-                    <FormInput
-                      label="Ending Hours"
-                      name="endingRunningHours"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="0.0"
-                      required
-                      value={form.endingRunningHours}
-                      onChange={handleChange}
-                    />
+                    {/* End Time */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        End Time <span className="text-red-500">*</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormInput
+                          label="Hour (0-23)"
+                          name="endHour"
+                          type="number"
+                          min="0"
+                          max="23"
+                          placeholder="00"
+                          required
+                          value={form.endHour}
+                          onChange={handleChange}
+                        />
+                        <FormInput
+                          label="Minute (0-59)"
+                          name="endMinute"
+                          type="number"
+                          min="0"
+                          max="59"
+                          placeholder="00"
+                          required
+                          value={form.endMinute}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -244,6 +314,8 @@ export default function EquipmentForm() {
                     name="observations"
                     rows={5}
                     placeholder="Enter any observations, maintenance notes, or remarks about equipment performance..."
+                    value={form.observations}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -264,13 +336,22 @@ export default function EquipmentForm() {
                 ) : (
                   <div className="flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 mr-2" />
-                    Submit Equipment Report
+                    Review & Submit Report
                   </div>
                 )}
               </button>
             </div>
           </div>
         </form>
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onSubmit={handleModalSubmit}
+          formData={form}
+          isSubmitting={isPending}
+        />
       </div>
     </div>
   )

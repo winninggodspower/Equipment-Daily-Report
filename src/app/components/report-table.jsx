@@ -1,10 +1,10 @@
 "use client"
 
 import { format } from "date-fns"
-import { Trash2, Loader2 } from 'lucide-react' // Removed Copy and MoreHorizontal
+import { Trash2, Loader2 } from "lucide-react"
 import { useState, useTransition } from "react"
 
-export default function ReportTable({ reports, onDeleteReport }) { // Removed onCopyReport prop
+export default function ReportTable({ reports, onDeleteReport }) {
   const [deletingId, setDeletingId] = useState(null)
   const [isDeleting, startDeleteTransition] = useTransition()
 
@@ -16,6 +16,24 @@ export default function ReportTable({ reports, onDeleteReport }) { // Removed on
         setDeletingId(null)
       })
     }
+  }
+
+  // Fallback function for when virtual fields aren't available
+  const formatTime = (hours, minutes) => {
+    if (hours === undefined || minutes === undefined) return "N/A"
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`
+  }
+
+  const calculateDuration = (startHour, startMinute, endHour, endMinute) => {
+    if (startHour === undefined || startMinute === undefined || endHour === undefined || endMinute === undefined) {
+      return "N/A"
+    }
+    const startTimeMinutes = startHour * 60 + startMinute
+    const endTimeMinutes = endHour * 60 + endMinute
+    const durationMinutes = endTimeMinutes - startTimeMinutes
+    const hours = Math.floor(durationMinutes / 60)
+    const minutes = durationMinutes % 60
+    return `${hours}h ${minutes}m`
   }
 
   if (!reports || reports.length === 0) {
@@ -43,7 +61,10 @@ export default function ReportTable({ reports, onDeleteReport }) { // Removed on
               Location
             </th>
             <th className="h-12 px-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
-              Hours (Start/End)
+              Time (Start/End)
+            </th>
+            <th className="h-12 px-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
+              Duration
             </th>
             <th className="h-12 px-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
               Fuel (Start/End)
@@ -67,10 +88,22 @@ export default function ReportTable({ reports, onDeleteReport }) { // Removed on
             >
               <td className="p-4 align-middle font-medium text-slate-700">{report.id}</td>
               <td className="p-4 align-middle">{report.name}</td>
-              <td className="p-4 align-middle">{report.date ? format(new Date(report.date), "MMM dd, yyyy") : 'N/A'}</td>
+              <td className="p-4 align-middle">
+                {report.date ? format(new Date(report.date), "MMM dd, yyyy") : "N/A"}
+              </td>
               <td className="p-4 align-middle">{report.equipmentTag}</td>
               <td className="p-4 align-middle">{report.location}</td>
-              <td className="p-4 align-middle">{`${report.startingRunningHours} / ${report.endingRunningHours}`}</td>
+              <td className="p-4 align-middle">
+                {/* Use virtual fields if available, fallback to manual formatting */}
+                {report.startTimeFormatted && report.endTimeFormatted
+                  ? `${report.startTimeFormatted} / ${report.endTimeFormatted}`
+                  : `${formatTime(report.startHour, report.startMinute)} / ${formatTime(report.endHour, report.endMinute)}`}
+              </td>
+              <td className="p-4 align-middle">
+                {/* Use virtual field if available, fallback to manual calculation */}
+                {report.workDurationFormatted ||
+                  calculateDuration(report.startHour, report.startMinute, report.endHour, report.endMinute)}
+              </td>
               <td className="p-4 align-middle">{`${report.startingFuelLevel}% / ${report.endingFuelLevel}%`}</td>
               <td className="p-4 align-middle">{report.quantityFuelAdded}</td>
               <td className="p-4 align-middle max-w-[200px] truncate">{report.observations}</td>

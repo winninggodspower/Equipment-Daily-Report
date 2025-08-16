@@ -12,8 +12,7 @@ const equipmentSchema = object({
   location: string().trim().required("Location is required"),
   startHour: number()
     .required("Start Hour is required")
-    .min(0, "Start Hour must be between 0-23")
-    .max(23, "Start Hour must be between 0-23")
+    .min(0, "Start Hour must be between 0-and infinity")
     .integer("Start Hour must be a whole number"),
   startMinute: number()
     .required("Start Minute is required")
@@ -22,8 +21,7 @@ const equipmentSchema = object({
     .integer("Start Minute must be a whole number"),
   endHour: number()
     .required("End Hour is required")
-    .min(0, "End Hour must be between 0-23")
-    .max(23, "End Hour must be between 0-23")
+    .min(0, "End Hour must be between 0-and infinity")
     .integer("End Hour must be a whole number"),
   endMinute: number()
     .required("End Minute is required")

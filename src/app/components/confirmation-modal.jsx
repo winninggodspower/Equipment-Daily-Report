@@ -3,18 +3,12 @@
 import { X, Copy, CheckCircle, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { format } from "date-fns"
-import { formatReportForCopy } from "@/utils"
+import { formatReportForCopy, formatTime } from "@/utils"
 
 export default function ConfirmationModal({ isOpen, onClose, onSubmit, formData, isSubmitting }) {
   const [isCopying, setIsCopying] = useState(false)
 
   if (!isOpen) return null
-
-  const formatTime = (hours, minutes) => {
-    const h = hours.toString().padStart(2, "0")
-    const m = minutes.toString().padStart(2, "0")
-    return `${h}:${m}`
-  }
 
   const handleCopy = async () => {
     setIsCopying(true)
@@ -30,7 +24,7 @@ export default function ConfirmationModal({ isOpen, onClose, onSubmit, formData,
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
@@ -71,7 +65,7 @@ export default function ConfirmationModal({ isOpen, onClose, onSubmit, formData,
 
             {/* Time Information */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-slate-800 border-b border-slate-200 pb-2">Time Information</h3>
+              <h3 className="font-semibold text-slate-800 border-b border-slate-200 pb-2">Engine Running Hours</h3>
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="font-medium">Start Time:</span>{" "}

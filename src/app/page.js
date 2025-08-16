@@ -160,7 +160,7 @@ export default function EquipmentForm() {
                     <FormInput
                       label="Equipment Tag"
                       name="equipmentTag"
-                      placeholder="e.g., EXC-001"
+                      placeholder="e.g., DG 01"
                       required
                       value={form.equipmentTag}
                       onChange={handleChange}
@@ -191,11 +191,10 @@ export default function EquipmentForm() {
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <FormInput
-                          label="Hour (0-23)"
+                          label="Hour "
                           name="startHour"
                           type="number"
                           min="0"
-                          max="23"
                           placeholder="00"
                           required
                           value={form.startHour}
@@ -222,11 +221,10 @@ export default function EquipmentForm() {
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <FormInput
-                          label="Hour (0-23)"
+                          label="Hour "
                           name="endHour"
                           type="number"
                           min="0"
-                          max="23"
                           placeholder="00"
                           required
                           value={form.endHour}
@@ -352,6 +350,22 @@ export default function EquipmentForm() {
           formData={form}
           isSubmitting={isPending}
         />
+
+        {/* Footer */}
+        <div className="text-center mt-8 pt-6 border-t border-slate-200">
+          <p className="text-sm text-slate-500">
+            Powered by{" "}
+            <a
+              href="mailto:beezmedia@gmail.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+            >
+              Beez Media
+            </a>
+          </p>
+        </div>
+
       </div>
     </div>
   )

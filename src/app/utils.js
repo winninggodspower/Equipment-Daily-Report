@@ -19,13 +19,27 @@ export function formatReportForCopy(formData) {
     formData.startHour && formData.startMinute ? formatTime(formData.startHour, formData.startMinute) : "N/A"
   const endTime = formData.endHour && formData.endMinute ? formatTime(formData.endHour, formData.endMinute) : "N/A"
 
-  return `DG 35
+  const startTimeFormatted = startTime !== "N/A"
+    ? (() => {
+        const [h, m] = startTime.split(":");
+        return `${h}H ${m}M`;
+      })()
+    : "N/A";
+
+  const endTimeFormatted = endTime !== "N/A"
+    ? (() => {
+        const [h, m] = endTime.split(":");
+        return `${h}H ${m}M`;
+      })()
+    : "N/A";
+
+  return `${formData.equipmentTag}
 Operator: ${formData.name}
 Date: ${formattedDate}
 Equipment Tag: ${formData.equipmentTag}
 Location: ${formData.location}
-Start Time: ${startTime}
-End Time: ${endTime}
+Start Time: ${startTimeFormatted}
+End Time: ${endTimeFormatted}
 Starting Fuel: ${formData.startingFuelLevel}%
 Ending Fuel: ${formData.endingFuelLevel}%
 Fuel Added: ${formData.quantityFuelAdded} Ltrs${formData.observations

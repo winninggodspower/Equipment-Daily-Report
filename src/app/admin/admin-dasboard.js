@@ -24,6 +24,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     startFetching(async () => {
       const fetchedReports = await getReports(filterDate || null)
+
+      // sort our reportss
+      fetchedReports.sort((a, b) => {
+        const numA = parseInt(a.equipmentTag.replace(/\D/g, ""), 10);
+        const numB = parseInt(b.equipmentTag.replace(/\D/g, ""), 10);
+        console.log(numA, numB);
+        return numA - numB;
+      });
       setReports(fetchedReports)
     })
   }, [filterDate]) // Refetch when filterDate changes

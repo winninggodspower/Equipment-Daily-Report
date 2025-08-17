@@ -38,10 +38,10 @@ Operator: ${formData.name}
 Date: ${formattedDate}
 Equipment Tag: ${formData.equipmentTag}
 Location: ${formData.location}
-Start Time: ${startTimeFormatted}
-End Time: ${endTimeFormatted}
-Starting Fuel: ${formData.startingFuelLevel}%
-Ending Fuel: ${formData.endingFuelLevel}%
+Start Running Hours: ${startTimeFormatted}
+Ending Running Hours: ${endTimeFormatted}
+Starting Fuel Level: ${formData.startingFuelLevel}%
+Ending Fuel Level: ${formData.endingFuelLevel}%
 Fuel Added: ${formData.quantityFuelAdded} Ltrs${formData.observations
   ? `
 Observations: ${formData.observations}`

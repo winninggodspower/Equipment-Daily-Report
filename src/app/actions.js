@@ -27,13 +27,13 @@ const equipmentSchema = object({
     .required("End Minute is required")
     .min(0, "End Minute must be between 0-59")
     .max(59, "End Minute must be between 0-59")
-    .integer("End Minute must be a whole number")
-    .test("end-time-after-start-time", "End time must be after start time", function (endMinute) {
-      const { startHour, startMinute, endHour } = this.parent
-      const startTimeMinutes = startHour * 60 + startMinute
-      const endTimeMinutes = endHour * 60 + endMinute
-      return endTimeMinutes > startTimeMinutes
-    }),
+    .integer("End Minute must be a whole number"),
+    // .test("end-time-after-start-time", "End time must be after start time", function (endMinute) {
+    //   const { startHour, startMinute, endHour } = this.parent
+    //   const startTimeMinutes = startHour * 60 + startMinute
+    //   const endTimeMinutes = endHour * 60 + endMinute
+    //   return endTimeMinutes > startTimeMinutes
+    // }),
   startingFuelLevel: number()
     .required("Starting Fuel Level is required")
     .min(0, "Starting Fuel Level cannot be negative")
